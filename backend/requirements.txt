@@ -18,6 +18,9 @@ httpx==0.28.1
 cvss==3.6
 python-whois==0.9.5
 
+# SSL Analysis
+cryptography>=42.0.0
+
 # Utilities
 python-dotenv==1.0.1
 reportlab==4.4.1

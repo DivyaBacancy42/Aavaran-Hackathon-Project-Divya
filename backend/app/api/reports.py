@@ -721,14 +721,11 @@ def _directory_findings(dir_findings, styles, story):
     tbl_data = [headers]
     ts = _tbl_style()
     SEV_ORDER = {"critical": 0, "high": 1, "medium": 2, "low": 3}
-    def _sev_str(s):
-        if s is None: return "low"
-        return s.value if hasattr(s, "value") else str(s).lower()
     dirs_s = sorted(dir_findings,
-                    key=lambda d: SEV_ORDER.get(_sev_str(d.severity), 4))
+                    key=lambda d: SEV_ORDER.get(str(d.severity or "low"), 4))
 
     for row_i, d in enumerate(dirs_s, 1):
-        sev = _sev_str(d.severity)
+        sev = str(d.severity or "low")
         tbl_data.append([
             _wrap(d.subdomain_hostname, styles["mono_sm"], 45),
             _wrap(d.path, styles["mono_sm"], 50),
@@ -1084,15 +1081,74 @@ async def _load_all_data(db: AsyncSession, scan_id: UUID):
     for s in ssls:
         ssls_m[s.subdomain_id] = s
 
-    # Attach nested data to subdomain objects (simple attribute assignment)
+    # Convert subdomains to plain dicts (avoids SQLAlchemy DetachedInstanceError in executor)
+    def _ssl_dict(si):
+        if not si:
+            return None
+        return {
+            "issuer": si.issuer, "subject": si.subject,
+            "valid_from": si.valid_from, "valid_until": si.valid_until,
+            "is_expired": si.is_expired, "san_domains": si.san_domains,
+            "grade": si.grade, "protocols": si.protocols,
+            "vulnerabilities": si.vulnerabilities,
+        }
+
+    def _ha_dict(ha):
+        if not ha:
+            return None
+        return {
+            "has_hsts": ha.has_hsts, "hsts_value": ha.hsts_value,
+            "has_csp": ha.has_csp, "csp_value": ha.csp_value,
+            "has_x_frame_options": ha.has_x_frame_options,
+            "x_frame_options_value": ha.x_frame_options_value,
+            "has_x_content_type_options": ha.has_x_content_type_options,
+            "has_referrer_policy": ha.has_referrer_policy,
+            "referrer_policy_value": ha.referrer_policy_value,
+            "has_permissions_policy": ha.has_permissions_policy,
+            "server_banner": ha.server_banner, "x_powered_by": ha.x_powered_by,
+            "redirect_count": ha.redirect_count, "final_url": ha.final_url,
+            "security_score": ha.security_score, "missing_headers": ha.missing_headers,
+        }
+
+    from types import SimpleNamespace
+
+    def _ns(d):
+        """Recursively convert dict to SimpleNamespace for attribute access."""
+        if isinstance(d, dict):
+            return SimpleNamespace(**{k: _ns(v) for k, v in d.items()})
+        if isinstance(d, list):
+            return [_ns(i) for i in d]
+        return d
+
+    subdomain_dicts = []
     for sub in subdomains:
-        sub.ports          = ports_m.get(sub.id, [])
-        sub.technologies   = techs_m.get(sub.id, [])
         waf = wafs_m.get(sub.id)
-        sub.waf_detected   = waf.detected if waf else None
-        sub.waf_name       = waf.waf_name if waf else None
-        sub.header_analysis = headers_m.get(sub.id)
-        sub.ssl_info        = ssls_m.get(sub.id)
+        sub_ports = [
+            {"port_number": p.port_number, "protocol": p.protocol,
+             "service": p.service, "version": p.version, "banner": p.banner}
+            for p in ports_m.get(sub.id, [])
+        ]
+        sub_techs = [
+            {"name": t.name, "version": t.version, "category": t.category}
+            for t in techs_m.get(sub.id, [])
+        ]
+        subdomain_dicts.append({
+            "id": str(sub.id),
+            "hostname": sub.hostname,
+            "ip_address": sub.ip_address,
+            "is_alive": sub.is_alive,
+            "http_status": sub.http_status,
+            "page_title": sub.page_title,
+            "source": sub.source,
+            "reverse_hostname": getattr(sub, "reverse_hostname", None),
+            "waf_detected": waf.detected if waf else None,
+            "waf_name": waf.waf_name if waf else None,
+            "ports": sub_ports,
+            "technologies": sub_techs,
+            "header_analysis": _ha_dict(headers_m.get(sub.id)),
+            "ssl_info": _ssl_dict(ssls_m.get(sub.id)),
+        })
+    subdomains_ns = [_ns(d) for d in subdomain_dicts]
 
     # Build CVE list with tech metadata
     SEV_ORDER = {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4}
@@ -1142,20 +1198,114 @@ async def _load_all_data(db: AsyncSession, scan_id: UUID):
         for c in cors if c.is_vulnerable
     ]
 
-    return scan, {
-        "subdomains":        subdomains,
-        "dns_records":       dns_records,
-        "email_security":    email_sec,
-        "whois_info":        whois,
-        "dns_security":      dns_sec,
+    # Convert scan to plain dict
+    scan_dict = {
+        "id": str(scan.id), "domain": scan.domain,
+        "status": scan.status.value if hasattr(scan.status, "value") else scan.status,
+        "risk_score": scan.risk_score,
+        "started_at": scan.started_at, "completed_at": scan.completed_at,
+        "created_at": scan.created_at,
+        "zone_transfer_successful": scan.zone_transfer_successful,
+    }
+
+    # Convert dns_records to plain dicts
+    dns_dicts = [
+        {"record_type": r.record_type, "hostname": r.hostname,
+         "value": r.value, "ttl": r.ttl}
+        for r in dns_records
+    ]
+
+    # Convert email_security to plain dict
+    email_dict = None
+    if email_sec:
+        email_dict = {
+            "spf_record": email_sec.spf_record, "spf_valid": email_sec.spf_valid,
+            "spf_mechanism": getattr(email_sec, "spf_mechanism", None),
+            "dkim_found": email_sec.dkim_found, "dkim_selector": email_sec.dkim_selector,
+            "dmarc_record": email_sec.dmarc_record, "dmarc_policy": email_sec.dmarc_policy,
+            "dmarc_pct": getattr(email_sec, "dmarc_pct", None),
+            "mta_sts_mode": getattr(email_sec, "mta_sts_mode", None),
+            "is_spoofable": email_sec.is_spoofable,
+        }
+
+    # Convert whois to plain dict
+    whois_dict = None
+    if whois:
+        whois_dict = {
+            "registrar": whois.registrar, "creation_date": whois.creation_date,
+            "expiry_date": whois.expiry_date, "updated_date": whois.updated_date,
+            "registrant_name": whois.registrant_name, "registrant_org": whois.registrant_org,
+            "registrant_email": getattr(whois, "registrant_email", None),
+            "registrant_country": whois.registrant_country,
+            "name_servers": whois.name_servers, "status": whois.status,
+            "dnssec": whois.dnssec,
+        }
+
+    # Convert dns_security to plain dict
+    dns_sec_dict = None
+    if dns_sec:
+        dns_sec_dict = {
+            "dnssec_enabled": dns_sec.dnssec_enabled, "dnssec_valid": dns_sec.dnssec_valid,
+            "has_caa": dns_sec.has_caa, "caa_issuers": dns_sec.caa_issuers,
+            "caa_wildcard_issuers": dns_sec.caa_wildcard_issuers,
+            "ns_count": dns_sec.ns_count, "issues": dns_sec.issues,
+        }
+
+    # Convert js_findings to plain dicts
+    js_dicts = [
+        {"subdomain_hostname": j.subdomain_hostname, "js_url": j.js_url,
+         "endpoints": j.endpoints, "secrets": j.secrets,
+         "endpoint_count": j.endpoint_count or 0, "secret_count": j.secret_count or 0}
+        for j in js_findings
+    ]
+
+    # Convert dir_findings to plain dicts
+    dir_dicts = [
+        {"subdomain_hostname": d.subdomain_hostname, "path": d.path,
+         "status_code": d.status_code, "content_length": d.content_length,
+         "finding_type": d.finding_type,
+         "severity": d.severity.value if d.severity else "low"}
+        for d in dir_findings
+    ]
+
+    # Convert ip_reputation to plain dicts
+    rep_dicts = [
+        {"ip_address": r.ip_address, "hostname": r.hostname,
+         "is_blacklisted": r.is_blacklisted, "blacklists": r.blacklists,
+         "threat_type": r.threat_type, "urlhaus_status": r.urlhaus_status,
+         "urlhaus_tags": r.urlhaus_tags, "abuse_score": r.abuse_score}
+        for r in ip_rep
+    ]
+
+    # Convert wayback to plain dicts
+    wb_dicts = [
+        {"url": w.url, "status_code": w.status_code, "mime_type": w.mime_type,
+         "last_seen": w.last_seen, "category": w.category}
+        for w in wayback
+    ]
+
+    # Convert geo to plain dicts
+    geo_dicts = [
+        {"ip_address": g.ip_address, "hostname": g.hostname, "country": g.country,
+         "country_code": g.country_code, "region": g.region, "city": g.city,
+         "isp": g.isp, "org": g.org, "asn": g.asn, "is_hosting": g.is_hosting}
+        for g in geo
+    ]
+
+    return _ns(scan_dict), {
+        "subdomains":        subdomains_ns,
+        "dns_records":       [_ns(d) for d in dns_dicts],
+        "email_security":    _ns(email_dict) if email_dict else None,
+        "whois_info":        _ns(whois_dict) if whois_dict else None,
+        "dns_security":      _ns(dns_sec_dict) if dns_sec_dict else None,
         "cves":              cves_list,
         "takeovers":         takeovers_list,
         "cors_results":      cors_list,
-        "js_findings":       js_findings,
-        "dir_findings":      dir_findings,
-        "ip_reputation":     ip_rep,
-        "wayback_findings":  wayback,
-        "geo_locations":     geo,
+        "js_findings":       [_ns(d) for d in js_dicts],
+        "dir_findings":      [_ns(d) for d in dir_dicts],
+        "ip_reputation":     [_ns(d) for d in rep_dicts],
+        "wayback_findings":  [_ns(d) for d in wb_dicts],
+        "geo_locations":     [_ns(d) for d in geo_dicts],
         "zone_transfer_successful": scan.zone_transfer_successful,
     }
 
@@ -1265,15 +1415,15 @@ async def download_report(
     if scan is None:
         raise HTTPException(status_code=404, detail="Scan not found")
 
-    if scan.status not in (ScanStatus.COMPLETED, ScanStatus.FAILED):
+    if scan.status not in ("completed", "failed"):
         raise HTTPException(
             status_code=400,
             detail="Report is only available for completed or failed scans.",
         )
 
     try:
-        loop = asyncio.get_running_loop()
-        pdf_bytes = await loop.run_in_executor(None, _build_pdf, scan, data)
+        # Run synchronously — all data is plain Python objects, no SQLAlchemy session needed
+        pdf_bytes = _build_pdf(scan, data)
     except Exception as e:
         logger.error(f"PDF generation failed for scan {scan_id}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"PDF generation failed: {e}")
