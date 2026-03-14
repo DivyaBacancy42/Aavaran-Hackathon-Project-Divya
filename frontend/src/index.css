@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Global Styles ────────────────────────────── */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #02020a;
+  color: #e2e2e8;
+  font-family: "Rajdhani", system-ui, sans-serif;
+  font-size: 16px;
+  letter-spacing: 0.01em;
+  overflow-x: hidden;
+}
+
+/* ── Scrollbar ────────────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0a0a0f;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e1e2e;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #00ff88;
+}
+
+/* ── Glow Effects ─────────────────────────────── */
+
+.glow-green {
+  box-shadow: 0 0 20px rgba(0, 255, 136, 0.15),
+              0 0 60px rgba(0, 255, 136, 0.05);
+}
+
+.glow-red {
+  box-shadow: 0 0 20px rgba(255, 51, 85, 0.15),
+              0 0 60px rgba(255, 51, 85, 0.05);
+}
+
+.glow-text-green {
+  text-shadow: 0 0 10px rgba(0, 255, 136, 0.5),
+               0 0 40px rgba(0, 255, 136, 0.2);
+}
+
+/* ── Scan Line Animation ──────────────────────── */
+
+.scan-line::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #00ff88, transparent);
+  animation: scan-line 3s linear infinite;
+}
+
+/* ── Input Styles ─────────────────────────────── */
+
+.input-glow:focus {
+  outline: none;
+  border-color: #00ff88;
+  box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.1),
+              0 0 20px rgba(0, 255, 136, 0.1);
+}

@@ -1,0 +1,23 @@
+# Web Framework
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+
+# Database
+sqlalchemy[asyncio]==2.0.36
+asyncpg==0.30.0
+alembic==1.14.1
+
+# Pydantic
+pydantic==2.10.4
+pydantic-settings==2.7.1
+
+# DNS & Network
+dnspython==2.7.0
+httpx==0.28.1
+cvss==3.6
+python-whois==0.9.5
+
+# Utilities
+python-dotenv==1.0.1
+reportlab==4.4.1

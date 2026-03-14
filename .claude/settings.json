@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \":*)",
+      "Bash(python3:*)",
+      "Bash(curl -s \"http://localhost:8000/api/scans/34ba4f9b-488d-4fb8-8f6e-b37018d6c4fe\")",
+      "Bash(timeout 30 ~/.local/bin/nuclei -l test_targets.txt -tags misconfig -severity high,critical -timeout 5 -c 10 -duc -silent -no-interactsh -json-export /tmp/ntest.jsonl)",
+      "Bash(echo \"Exit: $?\")",
+      "Bash(~/.local/bin/nuclei -list-templates)",
+      "Bash(timeout 45 ~/.local/bin/nuclei -l /tmp/t.txt -t /home/bacancy/nuclei-templates/http/exposures/ -severity medium,high,critical -timeout 5 -c 20 -duc -silent -no-interactsh -json-export /tmp/ntest2.jsonl)",
+      "Bash(timeout 10 ~/.local/bin/nuclei -h)",
+      "Bash(timeout 60 ~/.local/bin/nuclei -l /tmp/t.txt -t /home/bacancy/nuclei-templates/http/exposures/ -severity medium,high,critical -timeout 5 -c 20 -duc -silent -no-interactsh -o /tmp/ntest3.jsonl -jsonl)",
+      "Bash(timeout 30 ~/.local/bin/nuclei -l /tmp/t.txt -t /home/bacancy/nuclei-templates/http/exposures/files/ -severity low,medium,high,critical -timeout 5 -c 20 -duc -no-interactsh -o /tmp/ntest4.jsonl -jsonl)",
+      "Bash(timeout 120 ~/.local/bin/nuclei -l /tmp/dm_targets.txt -t /home/bacancy/nuclei-templates/http/exposures/ -severity low,medium,high,critical -timeout 8 -c 20 -duc -no-interactsh -o /tmp/dm_test.jsonl -jsonl)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code} %{time_total}s\" https://doctusmind.com)",
+      "Bash(time timeout:*)"
+    ]
+  }
+}
