@@ -176,26 +176,29 @@ def _cover(scan, styles, story):
 
     story.append(Paragraph("AAVRAN", ParagraphStyle(
         "cover_brand", fontSize=48, textColor=C_ACCENT,
-        alignment=TA_CENTER, fontName="Helvetica-Bold", spaceAfter=0)))
-    story.append(Spacer(1, 4 * mm))
+        alignment=TA_CENTER, fontName="Helvetica-Bold",
+        leading=62, spaceAfter=0, spaceBefore=0)))
+    story.append(Spacer(1, 10 * mm))
     story.append(Paragraph("Attack Surface Intelligence Report",
                             ParagraphStyle("cover_sub", fontSize=15, textColor=C_TEXT,
-                                           alignment=TA_CENTER, fontName="Helvetica", spaceAfter=0)))
-    story.append(Spacer(1, 6 * mm))
-    story.append(HRFlowable(width="80%", color=C_ACCENT, thickness=1.5))
+                                           alignment=TA_CENTER, fontName="Helvetica",
+                                           leading=20, spaceAfter=0, spaceBefore=0)))
     story.append(Spacer(1, 8 * mm))
+    story.append(HRFlowable(width="80%", color=C_ACCENT, thickness=1.5))
+    story.append(Spacer(1, 10 * mm))
 
     story.append(Paragraph(scan.domain.upper(), ParagraphStyle(
         "cover_domain", fontSize=20, textColor=C_INFO,
-        alignment=TA_CENTER, fontName="Helvetica-Bold", spaceAfter=0)))
-    story.append(Spacer(1, 4 * mm))
+        alignment=TA_CENTER, fontName="Helvetica-Bold",
+        leading=26, spaceAfter=0, spaceBefore=0)))
+    story.append(Spacer(1, 6 * mm))
 
     date_str = (scan.completed_at or scan.created_at).strftime("%B %d, %Y %H:%M UTC") \
         if (scan.completed_at or scan.created_at) else "—"
     story.append(Paragraph(f"Scan completed: {date_str}",
                             ParagraphStyle("cover_meta", fontSize=9, textColor=C_MUTED,
-                                           alignment=TA_CENTER, fontName="Helvetica")))
-    story.append(Spacer(1, 8 * mm))
+                                           alignment=TA_CENTER, fontName="Helvetica", leading=13)))
+    story.append(Spacer(1, 10 * mm))
 
     if scan.risk_score is not None:
         score = scan.risk_score
@@ -214,11 +217,13 @@ def _cover(scan, styles, story):
 
         story.append(Paragraph(f"{score:.0f} / 100", ParagraphStyle(
             "cover_score", fontSize=44, textColor=score_col,
-            alignment=TA_CENTER, fontName="Helvetica-Bold", spaceAfter=0)))
-        story.append(Spacer(1, 2 * mm))
+            alignment=TA_CENTER, fontName="Helvetica-Bold",
+            leading=56, spaceAfter=0, spaceBefore=0)))
+        story.append(Spacer(1, 4 * mm))
         story.append(Paragraph(label, ParagraphStyle(
             "cover_label", fontSize=13, textColor=score_col,
-            alignment=TA_CENTER, fontName="Helvetica-Bold", spaceAfter=0)))
+            alignment=TA_CENTER, fontName="Helvetica-Bold",
+            leading=18, spaceAfter=0, spaceBefore=0)))
 
     story.append(Spacer(1, 10 * mm))
     story.append(HRFlowable(width="80%", color=C_BORDER, thickness=0.5))
@@ -393,12 +398,12 @@ def _critical_actions(scan_data: dict, styles, story):
     for row_idx, (sev, *_) in enumerate(items, 1):
         if sev == "critical":
             ts.add("BACKGROUND", (0, row_idx), (-1, row_idx),
-                   colors.HexColor("#1a0008"))
+                   colors.HexColor("#ffe8ec"))
             ts.add("LEFTPADDING",  (0, row_idx), (0, row_idx), 5)
             ts.add("LINEAFTER",    (0, row_idx), (0, row_idx), 2, C_DANGER)
         elif sev == "high":
             ts.add("BACKGROUND", (0, row_idx), (-1, row_idx),
-                   colors.HexColor("#1a0d00"))
+                   colors.HexColor("#fff3e0"))
 
     tbl = Table(tbl_data, colWidths=col_w2, repeatRows=1)
     tbl.setStyle(ts)
@@ -514,7 +519,7 @@ def _open_ports(subdomains, styles, story):
             risk_p,
         ])
         if is_dangerous:
-            ts.add("BACKGROUND", (0, row_i), (-1, row_i), colors.HexColor("#1a0008"))
+            ts.add("BACKGROUND", (0, row_i), (-1, row_i), colors.HexColor("#ffe8ec"))
 
     tbl = Table(tbl_data, colWidths=col_w, repeatRows=1)
     tbl.setStyle(ts)
@@ -582,9 +587,9 @@ def _cves(cves, styles, story):
             _wrap(cve.get("description") or "—", styles["body"], 100),
         ])
         if sev == "critical":
-            ts.add("BACKGROUND", (0, row_i), (-1, row_i), colors.HexColor("#1a0008"))
+            ts.add("BACKGROUND", (0, row_i), (-1, row_i), colors.HexColor("#ffe8ec"))
         elif sev == "high":
-            ts.add("BACKGROUND", (0, row_i), (-1, row_i), colors.HexColor("#1a0d00"))
+            ts.add("BACKGROUND", (0, row_i), (-1, row_i), colors.HexColor("#fff3e0"))
 
     tbl = Table(tbl_data, colWidths=col_w, repeatRows=1)
     tbl.setStyle(ts)
@@ -681,7 +686,7 @@ def _ssl_tls(subdomains, styles, story):
             _wrap(proto_str or "—", styles["mono_sm"], 40),
         ])
         if ssl.is_expired:
-            ts.add("BACKGROUND", (0, row_i), (-1, row_i), colors.HexColor("#1a0008"))
+            ts.add("BACKGROUND", (0, row_i), (-1, row_i), colors.HexColor("#ffe8ec"))
 
     tbl = Table(tbl_data, colWidths=col_w, repeatRows=1)
     tbl.setStyle(ts)
@@ -807,7 +812,7 @@ def _takeovers(takeovers, styles, story):
     tbl = Table(tbl_data, colWidths=col_w, repeatRows=1)
     ts = _tbl_style()
     for i in range(1, len(tbl_data)):
-        ts.add("BACKGROUND", (0, i), (-1, i), colors.HexColor("#1a0008"))
+        ts.add("BACKGROUND", (0, i), (-1, i), colors.HexColor("#ffe8ec"))
     tbl.setStyle(ts)
     story.append(tbl)
     story.append(Spacer(1, 4 * mm))
@@ -841,7 +846,7 @@ def _ip_reputation(rep_list, styles, story):
             score,
         ])
         if r.is_blacklisted:
-            ts.add("BACKGROUND", (0, row_i), (-1, row_i), colors.HexColor("#1a0008"))
+            ts.add("BACKGROUND", (0, row_i), (-1, row_i), colors.HexColor("#ffe8ec"))
 
     tbl = Table(tbl_data, colWidths=col_w, repeatRows=1)
     tbl.setStyle(ts)
