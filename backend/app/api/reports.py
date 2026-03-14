@@ -657,6 +657,8 @@ def _ssl_tls(subdomains, styles, story):
         grade_p = Paragraph(grade, ParagraphStyle("gp", fontSize=8, textColor=grade_col,
                                                    fontName="Helvetica-Bold"))
         proto = ssl.protocols or {}
+        if hasattr(proto, '__dict__'):
+            proto = vars(proto)
         proto_str = " / ".join(k for k, v in proto.items() if v)
         exp_p = Paragraph("YES" if ssl.is_expired else "NO",
                           ParagraphStyle("ep", fontSize=7,
