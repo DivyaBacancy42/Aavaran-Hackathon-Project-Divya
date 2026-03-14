@@ -77,9 +77,9 @@ def _styles():
         "meta":     s("RPT_meta",     fontSize=9,  textColor=C_MUTED,
                       alignment=TA_CENTER, spaceAfter=1, fontName="Helvetica"),
         "h1":       s("RPT_h1",       fontSize=16, textColor=C_ACCENT,
-                      spaceBefore=10, spaceAfter=4, fontName="Helvetica-Bold"),
+                      spaceBefore=12, spaceAfter=10, fontName="Helvetica-Bold", leading=22),
         "h2":       s("RPT_h2",       fontSize=12, textColor=C_INFO,
-                      spaceBefore=6,  spaceAfter=2, fontName="Helvetica-Bold"),
+                      spaceBefore=8,  spaceAfter=6,  fontName="Helvetica-Bold", leading=18),
         "body":     s("RPT_body",     fontSize=8,  textColor=C_TEXT,
                       fontName="Helvetica", leading=11),
         "mono":     s("RPT_mono",     fontSize=7,  textColor=C_TEXT,
@@ -419,6 +419,7 @@ def _dns_records(dns_records, styles, story):
         story.append(Paragraph("No DNS records found.", styles["body"]))
         return
 
+    story.append(Spacer(1, 4 * mm))
     headers = ["Type", "Hostname", "Value", "TTL"]
     col_w = [16 * mm, 45 * mm, 95 * mm, 18 * mm]
     tbl_data = [headers]
@@ -541,6 +542,7 @@ def _technologies(subdomains, styles, story):
         story.append(Paragraph("No technologies detected.", styles["body"]))
         return
 
+    story.append(Spacer(1, 4 * mm))
     headers = ["Technology", "Version", "Category", "Found On"]
     col_w = [40 * mm, 25 * mm, 30 * mm, 79 * mm]
     tbl_data = [headers]
@@ -605,6 +607,7 @@ def _email_security(es, styles, story):
         story.append(Paragraph("No email security data collected.", styles["body"]))
         return
 
+    story.append(Spacer(1, 4 * mm))
     def yesno(val, good_on_true=True):
         if val is None:
             return Paragraph("—", styles["body"])
@@ -657,6 +660,7 @@ def _ssl_tls(subdomains, styles, story):
         story.append(Paragraph("No SSL data collected.", styles["body"]))
         return
 
+    story.append(Spacer(1, 4 * mm))
     headers = ["Host", "Grade", "Issuer", "Valid Until", "Expired", "TLS Protocols"]
     col_w = [45 * mm, 12 * mm, 40 * mm, 24 * mm, 14 * mm, 39 * mm]
     tbl_data = [headers]
@@ -703,6 +707,7 @@ def _cors(cors_results, styles, story):
         story.append(Paragraph("No CORS misconfigurations detected.", styles["body"]))
         return
 
+    story.append(Spacer(1, 4 * mm))
     headers = ["Host", "Type", "Reflected Origin", "With Credentials", "Severity"]
     col_w = [45 * mm, 38 * mm, 38 * mm, 24 * mm, 20 * mm]
     tbl_data = [headers]
@@ -730,6 +735,7 @@ def _directory_findings(dir_findings, styles, story):
         story.append(Paragraph("No sensitive paths discovered.", styles["body"]))
         return
 
+    story.append(Spacer(1, 4 * mm))
     headers = ["Host", "Path", "Status", "Type", "Severity"]
     col_w = [45 * mm, 50 * mm, 14 * mm, 30 * mm, 18 * mm]
     tbl_data = [headers]
@@ -749,7 +755,7 @@ def _directory_findings(dir_findings, styles, story):
         ])
         if sev in ("critical", "high"):
             ts.add("BACKGROUND", (0, row_i), (-1, row_i),
-                   colors.HexColor("#1a0008" if sev == "critical" else "#1a0d00"))
+                   colors.HexColor("#ffe8ec" if sev == "critical" else "#fff3e0"))
 
     tbl = Table(tbl_data, colWidths=col_w, repeatRows=1)
     tbl.setStyle(ts)
@@ -765,10 +771,12 @@ def _js_findings(js_findings, styles, story):
         story.append(Paragraph("No JS secrets or notable endpoints found.", styles["body"]))
         return
 
+    story.append(Spacer(1, 4 * mm))
     for js in js_findings:
         if not (js.secret_count or js.endpoint_count):
             continue
         story.append(Paragraph(f"File: {js.js_url}", styles["h2"]))
+        story.append(Spacer(1, 3 * mm))
         story.append(Paragraph(f"Host: {js.subdomain_hostname}  |  "
                                 f"Secrets: {js.secret_count}  |  Endpoints: {js.endpoint_count}",
                                 styles["body"]))
@@ -796,6 +804,7 @@ def _takeovers(takeovers, styles, story):
         story.append(Paragraph("No subdomain takeover vulnerabilities detected.", styles["body"]))
         return
 
+    story.append(Spacer(1, 4 * mm))
     headers = ["Hostname", "Service", "CNAME Target", "Fingerprint", "Severity"]
     col_w = [45 * mm, 25 * mm, 40 * mm, 40 * mm, 18 * mm]
     tbl_data = [headers]
@@ -826,6 +835,7 @@ def _ip_reputation(rep_list, styles, story):
         story.append(Paragraph("No IP reputation data collected.", styles["body"]))
         return
 
+    story.append(Spacer(1, 4 * mm))
     headers = ["IP Address", "Hostname", "Blacklisted", "Lists", "Abuse Score"]
     col_w = [28 * mm, 45 * mm, 20 * mm, 55 * mm, 22 * mm]
     tbl_data = [headers]
@@ -862,6 +872,7 @@ def _dns_security(dns_sec, styles, story):
         story.append(Paragraph("No DNS security data collected.", styles["body"]))
         return
 
+    story.append(Spacer(1, 4 * mm))
     def yn(val):
         col = C_ACCENT if val else C_DANGER
         return Paragraph("YES" if val else "NO",
@@ -907,6 +918,7 @@ def _geolocation(geo_list, styles, story):
         story.append(Paragraph("No geolocation data collected.", styles["body"]))
         return
 
+    story.append(Spacer(1, 4 * mm))
     headers = ["IP Address", "Hostname", "Country", "City", "ISP/Org", "Datacenter"]
     col_w = [28 * mm, 40 * mm, 22 * mm, 22 * mm, 40 * mm, 22 * mm]
     tbl_data = [headers]
@@ -938,6 +950,7 @@ def _whois(whois, styles, story):
         story.append(Paragraph("No WHOIS data collected.", styles["body"]))
         return
 
+    story.append(Spacer(1, 4 * mm))
     def fmt_date(d):
         if d is None:
             return "—"
@@ -986,6 +999,8 @@ def _wayback(wayback_findings, styles, story):
         story.append(Paragraph("No historical endpoints found.", styles["body"]))
         return
 
+    story.append(Spacer(1, 4 * mm))
+
     # Group by category
     by_cat: dict = {}
     for w in wayback_findings:
@@ -993,6 +1008,7 @@ def _wayback(wayback_findings, styles, story):
 
     for cat, entries in sorted(by_cat.items()):
         story.append(Paragraph(cat.upper(), styles["h2"]))
+        story.append(Spacer(1, 3 * mm))
         headers = ["URL", "Status", "Last Seen"]
         col_w = [115 * mm, 20 * mm, 30 * mm]
         tbl_data = [headers]
