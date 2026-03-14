@@ -35,18 +35,18 @@ from reportlab.platypus.flowables import KeepTogether
 router = APIRouter(prefix="/api/scans", tags=["reports"])
 
 # ── Colour palette ──────────────────────────────────────────────────────────
-C_BG         = colors.HexColor("#0a0a0f")
-C_SURFACE    = colors.HexColor("#12121a")
-C_ACCENT     = colors.HexColor("#00ff88")
-C_DANGER     = colors.HexColor("#ff3355")
-C_WARNING    = colors.HexColor("#ffaa00")
-C_INFO       = colors.HexColor("#00aaff")
-C_PURPLE     = colors.HexColor("#8855ff")
-C_TEXT       = colors.HexColor("#e2e2e8")
-C_MUTED      = colors.HexColor("#6b6b80")
-C_BORDER     = colors.HexColor("#1e1e2e")
-C_ROW_EVEN   = colors.HexColor("#0f0f18")
-C_ROW_ODD    = colors.HexColor("#12121a")
+C_BG         = colors.white
+C_SURFACE    = colors.HexColor("#f5f5fa")
+C_ACCENT     = colors.HexColor("#00aa55")
+C_DANGER     = colors.HexColor("#cc1133")
+C_WARNING    = colors.HexColor("#dd7700")
+C_INFO       = colors.HexColor("#0066cc")
+C_PURPLE     = colors.HexColor("#6633cc")
+C_TEXT       = colors.HexColor("#1a1a2a")
+C_MUTED      = colors.HexColor("#666680")
+C_BORDER     = colors.HexColor("#ccccdd")
+C_ROW_EVEN   = colors.HexColor("#f0f0f8")
+C_ROW_ODD    = colors.white
 C_HEADER_ROW = colors.HexColor("#1a1a2e")
 
 SEV_COLORS = {
@@ -144,22 +144,22 @@ def _wrap(text, style, max_chars=120):
 def _build_page_template(domain: str, scan_date: str):
     def on_page(canvas, doc):
         canvas.saveState()
-        # Dark background
-        canvas.setFillColor(C_BG)
+        # White background
+        canvas.setFillColor(colors.white)
         canvas.rect(0, 0, PAGE_W, PAGE_H, fill=1, stroke=0)
-        # Top bar
-        canvas.setFillColor(C_SURFACE)
+        # Top bar (dark)
+        canvas.setFillColor(colors.HexColor("#1a1a2e"))
         canvas.rect(0, PAGE_H - 12 * mm, PAGE_W, 12 * mm, fill=1, stroke=0)
-        canvas.setFillColor(C_ACCENT)
+        canvas.setFillColor(colors.HexColor("#00aa55"))
         canvas.setFont("Helvetica-Bold", 8)
-        canvas.drawString(MARGIN, PAGE_H - 8 * mm, f"SHODH — {domain}")
-        canvas.setFillColor(C_MUTED)
+        canvas.drawString(MARGIN, PAGE_H - 8 * mm, f"AAVRAN — {domain}")
+        canvas.setFillColor(colors.HexColor("#aaaacc"))
         canvas.setFont("Helvetica", 7)
         canvas.drawRightString(PAGE_W - MARGIN, PAGE_H - 8 * mm, scan_date)
-        # Bottom bar
-        canvas.setFillColor(C_SURFACE)
+        # Bottom bar (dark)
+        canvas.setFillColor(colors.HexColor("#1a1a2e"))
         canvas.rect(0, 0, PAGE_W, 10 * mm, fill=1, stroke=0)
-        canvas.setFillColor(C_MUTED)
+        canvas.setFillColor(colors.HexColor("#aaaacc"))
         canvas.setFont("Helvetica", 7)
         canvas.drawString(MARGIN, 4 * mm, "CONFIDENTIAL — Attack Surface Intelligence Report")
         canvas.drawRightString(PAGE_W - MARGIN, 4 * mm, f"Page {doc.page}")
@@ -172,24 +172,30 @@ def _build_page_template(domain: str, scan_date: str):
 # ── Section: Cover Page ──────────────────────────────────────────────────────
 
 def _cover(scan, styles, story):
-    story.append(Spacer(1, 40 * mm))
-    story.append(Paragraph("SHODH", ParagraphStyle(
+    story.append(Spacer(1, 30 * mm))
+
+    story.append(Paragraph("AAVRAN", ParagraphStyle(
         "cover_brand", fontSize=48, textColor=C_ACCENT,
-        alignment=TA_CENTER, fontName="Helvetica-Bold", spaceAfter=2)))
+        alignment=TA_CENTER, fontName="Helvetica-Bold", spaceAfter=0)))
+    story.append(Spacer(1, 4 * mm))
     story.append(Paragraph("Attack Surface Intelligence Report",
-                            ParagraphStyle("cover_sub", fontSize=16, textColor=C_TEXT,
-                                           alignment=TA_CENTER, fontName="Helvetica", spaceAfter=8)))
-    story.append(HRFlowable(width="80%", color=C_ACCENT, thickness=1, spaceAfter=10))
-    story.append(Spacer(1, 10 * mm))
+                            ParagraphStyle("cover_sub", fontSize=15, textColor=C_TEXT,
+                                           alignment=TA_CENTER, fontName="Helvetica", spaceAfter=0)))
+    story.append(Spacer(1, 6 * mm))
+    story.append(HRFlowable(width="80%", color=C_ACCENT, thickness=1.5))
+    story.append(Spacer(1, 8 * mm))
 
     story.append(Paragraph(scan.domain.upper(), ParagraphStyle(
-        "cover_domain", fontSize=22, textColor=C_INFO,
-        alignment=TA_CENTER, fontName="Helvetica-Bold", spaceAfter=6)))
+        "cover_domain", fontSize=20, textColor=C_INFO,
+        alignment=TA_CENTER, fontName="Helvetica-Bold", spaceAfter=0)))
+    story.append(Spacer(1, 4 * mm))
 
     date_str = (scan.completed_at or scan.created_at).strftime("%B %d, %Y %H:%M UTC") \
         if (scan.completed_at or scan.created_at) else "—"
-    story.append(Paragraph(f"Scan completed: {date_str}", styles["meta"]))
-    story.append(Spacer(1, 6 * mm))
+    story.append(Paragraph(f"Scan completed: {date_str}",
+                            ParagraphStyle("cover_meta", fontSize=9, textColor=C_MUTED,
+                                           alignment=TA_CENTER, fontName="Helvetica")))
+    story.append(Spacer(1, 8 * mm))
 
     if scan.risk_score is not None:
         score = scan.risk_score
@@ -200,28 +206,29 @@ def _cover(scan, styles, story):
             score_col = C_WARNING
             label = "HIGH RISK"
         elif score >= 20:
-            score_col = colors.HexColor("#ffcc44")
+            score_col = colors.HexColor("#cc8800")
             label = "MEDIUM RISK"
         else:
             score_col = C_ACCENT
             label = "LOW RISK"
 
-        story.append(Paragraph(f"{score:.0f}/100", ParagraphStyle(
-            "cover_score", fontSize=52, textColor=score_col,
+        story.append(Paragraph(f"{score:.0f} / 100", ParagraphStyle(
+            "cover_score", fontSize=44, textColor=score_col,
             alignment=TA_CENTER, fontName="Helvetica-Bold", spaceAfter=0)))
+        story.append(Spacer(1, 2 * mm))
         story.append(Paragraph(label, ParagraphStyle(
-            "cover_label", fontSize=14, textColor=score_col,
-            alignment=TA_CENTER, fontName="Helvetica-Bold", spaceAfter=8)))
+            "cover_label", fontSize=13, textColor=score_col,
+            alignment=TA_CENTER, fontName="Helvetica-Bold", spaceAfter=0)))
 
-    story.append(Spacer(1, 8 * mm))
+    story.append(Spacer(1, 10 * mm))
     story.append(HRFlowable(width="80%", color=C_BORDER, thickness=0.5))
-    story.append(Spacer(1, 4 * mm))
+    story.append(Spacer(1, 5 * mm))
     story.append(Paragraph(
-        "This report was generated by SHODH — a self-hosted, open-source attack surface "
+        "This report was generated by AAVRAN — a self-hosted, open-source attack surface "
         "mapping platform. All data is collected from passive DNS, certificate transparency, "
         "TCP port scanning, and public threat intelligence feeds. No active exploitation was performed.",
         ParagraphStyle("cover_note", fontSize=8, textColor=C_MUTED,
-                       alignment=TA_CENTER, fontName="Helvetica", leading=12)))
+                       alignment=TA_CENTER, fontName="Helvetica", leading=13)))
     story.append(PageBreak())
 
 
