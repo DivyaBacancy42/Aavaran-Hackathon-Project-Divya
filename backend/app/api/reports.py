@@ -765,8 +765,8 @@ def _js_findings(js_findings, styles, story):
             sec_rows = [["Secret Type", "Value (masked)"]]
             for sec in js.secrets:
                 sec_rows.append([
-                    _wrap(sec.get("type") or "unknown", styles["body"], 30),
-                    _wrap(sec.get("value") or "—", styles["mono_sm"], 80),
+                    _wrap(getattr(sec, "type", None) or (sec.get("type") if isinstance(sec, dict) else None) or "unknown", styles["body"], 30),
+                    _wrap(getattr(sec, "value", None) or (sec.get("value") if isinstance(sec, dict) else None) or "—", styles["mono_sm"], 80),
                 ])
             sec_tbl = Table(sec_rows, colWidths=[35 * mm, 90 * mm])
             sec_tbl.setStyle(_tbl_style())
